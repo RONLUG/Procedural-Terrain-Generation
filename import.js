@@ -1,3 +1,3 @@
-import {generateNoise} from "./noise.mjs";
+// import {generateNoise} from "./noise.mjs";
 
-console.log(generateNoise(3, 3))
+// console.log(generateNoise(3, 3))

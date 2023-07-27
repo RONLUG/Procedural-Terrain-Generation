@@ -1,16 +1,23 @@
 import * as THREE from 'three'
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+// import {generateNoise} from "./noise.mjs"
+import {createNoise2D} from "simplex-noise";
+import * as dat from 'dat.gui';
 
-
+// Add renderer
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
+// Add camera
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 10000);
 camera.position.set(0, 0, 40);
+
+// Add camera controller
 const controls = new OrbitControls( camera, renderer.domElement );
 controls.update()
 
+// Create scene
 const scene = new THREE.Scene();
 
 // Add grid
@@ -19,78 +26,41 @@ const gridDivisions = 100;
 const gridHelper = new THREE.GridHelper( gridSize, gridDivisions );
 scene.add( gridHelper );
 
+// Add test sphere
 const sphereGeom = new THREE.SphereGeometry( 1, 32, 16 );
 const sphereMaterial = new THREE.MeshPhysicalMaterial();
 const sphere = new THREE.Mesh( sphereGeom, sphereMaterial );
-sphere.position.set(0, 0, 1)
 scene.add(sphere)
 const light = new THREE.PointLight(0xffffff,1);
 light.position.set(10, 10, 10)
 scene.add(light);
 
-const vertices = []
-const indices = []
+// Create plane
 
-const col = 10;
-const row = 2;
-
-const meshWidth = 1;
-const meshHeight = 1;
-
-const anchorX = 0;
-const anchorY = 0;
-
-const offSetX = anchorX - (meshWidth * col) / 2
-const offSetY = anchorY - (meshHeight * row) / 2
-
-const amplitude = 2
-
-for (let i = 0; i < row + 1; i++) {
-    for (let j = 0; j < col + 1; j++) {
-        let posX = offSetX + (j * meshWidth)
-        let posY = offSetY + (i * meshHeight)
-        let posZ = 1 + Math.random() * amplitude
-        vertices.push(posX, posY, posZ) // Add vertex (x, y ,z) components
-    }
-}
-console.log(vertices)
-
-for (let i = 0; i < row; i++) {
-    const currentRowIndex = i * (col + 1);
-    const nextRowIndex = (i + 1) * (col + 1);
-    for (let j = 0; j < col; j++) {
-        indices.push(currentRowIndex + j + 1, nextRowIndex + j, currentRowIndex + j)
-        indices.push(nextRowIndex + j + 1, nextRowIndex + j, currentRowIndex + j + 1)
-    }
-}
-
-
-console.log(indices)
-const geom = new THREE.BufferGeometry()
-geom.setIndex(indices)
-geom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices), 3))
-
-// const mat = new THREE.MeshPhysicalMaterial();
-const mat = new THREE.MeshPhysicalMaterial();
-mat.side = THREE.DoubleSide;
-// const mesh = new THREE.Mesh(geom, mat)
-// scene.add(mesh)
-// scene.add(light);
-// mesh.rotateX(1/4)
-
-const planeGeom = new THREE.PlaneGeometry(100, 100, 100, 100)
+const planeWidth = 100
+const planeHeight = 100
+const planeGeom = new THREE.PlaneGeometry(planeWidth, planeHeight, planeWidth, planeHeight)
 const planeMat = new THREE.MeshBasicMaterial({wireframe: true, color: 0x00ffff})
-// const planeMat = new THREE.MeshPhysicalMaterial()
 const plane = new THREE.Mesh(planeGeom, planeMat)
 scene.add(plane)
 
+
+// const noise = generateNoise(planeWidth  + 1, planeHeight + 1)
+const noise = createNoise2D()
 let planeVertices = plane.geometry.attributes.position.array
+console.log(planeVertices.length)
+// console.log(101 % 100)
 if (planeVertices)
 {
-    for (let i = 0; i < planeVertices.length; i += 3)
+    const totalVertex = (planeWidth + 1)  * (planeHeight + 1)
+    for (let i = 0; i < totalVertex; i++)
     {
-        // planeVertices[3 * i]
-        planeVertices[(3 * i) + 2] += Math.random()
+        let xPos = i / (planeWidth + 1)
+        let yPos = i % (planeWidth + 1)
+        // Apply noise to z position
+        // planeVertices[(3 * i) + 2] += noise[Math.floor(i / (planeWidth + 1))][i % (planeWidth + 1)]
+        planeVertices[(3 * i) + 2] = (1 + noise(xPos/100, yPos/100)) * 10
+        planeVertices[(3 * i) + 2] += (noise(xPos/10, yPos/10)) * 0.5
     }
 
 }
@@ -109,6 +79,9 @@ function animate() {
     renderer.render(scene, camera)
 }
 animate();
+// Creating a GUI with options.
+const gui = new dat.GUI({name: 'My GUI'});
+console.log(dat)
 
 // Update canvas when resized
 window.addEventListener('resize', ()=>{
